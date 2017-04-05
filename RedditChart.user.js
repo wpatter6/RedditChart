@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         RedditChart
 // @namespace    http://tampermonkey.net/
-// @version      0.1
+// @version      1.0
 // @description  Some data analysis for reddit
 // @author       wpatter6
 // @match        *://*.reddit.com/*
