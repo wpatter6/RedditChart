@@ -3,7 +3,7 @@
 // @namespace    http://tampermonkey.net/
 // @version      0.1
 // @description  Some data analysis for reddit
-// @author       You
+// @author       wpatter6
 // @match        *://*.reddit.com/*
 // @grant        none
 // ==/UserScript==
