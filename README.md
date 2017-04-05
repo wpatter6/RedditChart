@@ -10,3 +10,7 @@ There is a drop down in the widget which allows the user to select if they want 
 Clicking the subreddit's pie chart slice will open that sub in a new tab.  
 
 Right clicking a sub in the pie chart will hide that sub from the pie chart.  Only one sub will be hidden at a time.  To show the hidden sub, right click on the widget outside of the pie chart.
+
+![Small Chart](https://i.imgur.com/Brc9evX.png "Small Chart Image")
+
+![Full Chart](https://i.imgur.com/e2OESD5.png "Full Chart Image")
