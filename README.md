@@ -1,7 +1,7 @@
 # RedditChart
 Creates a widget on Reddit in the lower right hand corner which displays a pie chart showing which subreddits are most displayed on the current page.  Works on /r/all, /r/popular, user pages, and user multi's. 
 
-Install in your browser using Greasemonkey in FireFox or Tampermonkey in Chrome.
+Install in your browser using [Greasemonkey](https://addons.mozilla.org/en-US/firefox/addon/greasemonkey/) in FireFox or [Tampermonkey](https://chrome.google.com/webstore/detail/tampermonkey/dhdgffkkebhmkfjojejmpbldmpobfkfo?hl=en) in Chrome.
 
 It also creates a distinct color for each subreddit which is used in both the pie chart, and on the page itself.
 
