@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         RedditChart
 // @namespace    http://tampermonkey.net/
-// @version      1.0
+// @version      1.1
 // @description  Some data analysis for reddit
 // @author       wpatter6
 // @match        *://*.reddit.com/*
@@ -10,9 +10,8 @@
 
 (()=>{
     'use strict';
-
     var main=()=>{
-        var doLog=true,
+        var doLog=true,_canvasBoxSize = 290, _canvasMinSize = 60,_lastData=null, _lastColors=null,_noCollapse=!!localStorage.getItem("rc-noCollapse"),selectOpened=false,
         aggregates={
             "Post Count":1
             ,"Sum of Votes":2
@@ -27,7 +26,7 @@
             return console.log(a);
         },
         go=()=>{//method executed once Chart.js has loaded
-            if(String(location).indexOf("reddit.com/r/")>-1 && String(location).indexOf("reddit.com/r/all") === -1)
+            if(String(location).indexOf("reddit.com/r/")>-1 && String(location).indexOf("reddit.com/r/all") === -1 && String(location).indexOf("reddit.com/r/popular") === -1)
                 return log("Inside subreddit. Initialization cancelled.");
 
             log("Chart.js namespace found.  Initializing...");
@@ -41,19 +40,39 @@
                 return execReg(regstr,location) + " " + ret;
             })(),
             //dom element creation
-            el=$("<canvas>").addClass("rc-chart").attr({width:"290px",height:"290px",oncontextmenu:"return false;"})
-                .mousemove((e)=>{var activePoints=chart.getElementsAtEvent(e.originalEvent),sub=activePoints.length>0?chart.data.labels[activePoints[0]._index]:null; $(".thing").removeClass("rc-active"); if(sub)$(".thing[data-subreddit="+sub+"]").addClass("rc-active");})
+            el=$("<canvas>").addClass("rc-chart").attr({width:(_noCollapse?_canvasBoxSize:_canvasMinSize)+"px",height:(_noCollapse?_canvasBoxSize:_canvasMinSize)+"px",oncontextmenu:"return false;"})
+                .mousemove((e)=>{
+					var activePoints=chart.getElementsAtEvent(e.originalEvent),
+						sub=activePoints.length>0?chart.data.labels[activePoints[0]._index]:null; 
+					
+					log("activePoints[0]", activePoints.length>0?_lastColors[activePoints[0]._index]:null);
+					
+					$(".thing").removeClass("rc-active").css("border-left",""); 
+					
+					if(sub){ 
+						$(".thing[data-subreddit="+sub+"]").addClass("rc-active").css("border-left","5px solid "+_lastColors[activePoints[0]._index]); 
+					}
+				})
 				.mouseout(()=>{$(".thing").removeClass("rc-active");})
                 .mousedown((e)=>{if(e.button !== 2) return true; var activePoints=chart.getElementsAtEvent(e.originalEvent), sub=activePoints.length > 0 ? chart.data.labels[activePoints[0]._index] :null; exclude=sub; calculate(); return false;}),
-            dd=$("<select>").addClass("rc-dd").change((e)=>{localStorage.setItem("rc-agg",aggregate=parseInt($(e.target).val())); calculate();}),
+            dd=$("<select>").addClass("rc-dd").change((e)=>{localStorage.setItem("rc-agg",aggregate=parseInt($(e.target).val())); calculate();}).click(()=>{selectOpened=!selectOpened}),
             ddspan=$("<span>").addClass("rc-aggspan").append(dd).append($("<span>").text((()=>{//set the text of which page we're on
-                if(subpage.indexOf("user")===0) {
-                    var username=execReg("/user/([^/?#]*)",location);
+                if(subpage.indexOf("user")===0) {//handles user multis as well
+                    var username=execReg("/user/([^?#]*)",location);
                     if(username) return subpage.replace("user", username);
                 }
-                return (curpage?"/r/"+curpage:"front page") + " " + subpage;
+				var def = $(".user").text()==="Want to join? Log in or sign up in seconds." ? "popular" : "front page";
+                return (curpage?"/r/"+curpage:def) + " " + subpage;
             })()).css({paddingLeft:"10px"})).css({padding:"10px"}),
-            div=$("<div>").addClass("rc-float").appendTo($("body")).append(ddspan).append(el).hover(()=>{ddspan.toggle();}),
+            div=$("<div>").addClass("rc-float").appendTo($("body")).append(ddspan).append(el).hover(()=>{
+                ddspan.show();
+                dochart(null, _canvasBoxSize, true);
+            }, ()=>{
+				if(!selectOpened){
+					ddspan.hide();
+					dochart(null, _canvasMinSize, true);
+				}
+            }),
             calculate=()=>{//calculate and set up the chart
 				log("calculating...");
                 var aggregateData=[],namecount={},rawdata=$(".thing:visible").not(".promoted").map((i,e)=>{
@@ -97,22 +116,39 @@
                 dochart(aggregateData);
                 return aggregateData;
             },
-            dochart=(data)=>{//take aggregated/sorted data and apply it to the chart & .subreddit elements
+            dochart=(data, boxSize, noAnimate)=>{//take aggregated/sorted data and apply it to the chart & .subreddit elements
 				log("charting...");
-                var names=[],dataitems=[],colors=getRandomColors(data.length);
+                var reuseColors = false;
+                if(!data){
+                    if(!_lastData){
+                        return calculate;
+                    }
+                    data = _lastData;
+                    reuseColors = true;
+                } else _lastData = data;
+
+                var names=[],dataitems=[],colors= reuseColors ? _lastColors : getRandomColors(data.length);
+                _lastColors = colors;
                 for(var i=0; i<data.length; i++){
                     var agg=data[i];
                     names.push(agg.sub);
                     dataitems.push(agg.value);
                 }
+
                 $(".subreddit:visible").each((i,e)=>{
-                    var sub =$(e).text().replace("/r/","");
+                    var sub =$(e).text().replace(/\/?r\//gi,"");
                     if(sub===exclude){$(e).css({backgroundColor:"",color:""});return;}
                     var idx=names.indexOf(sub);if(idx===-1) return;
-                    var color=colors[idx],fontColor=getColorLuma(color)<60?"white":"black";
+                    var color=colors[idx],fontColor=getColorLuma(color)<70?"white":"black";
                     $(e).css({backgroundColor:color,color:fontColor});
                 });
+
                 if(chart) chart.destroy();
+				if(boxSize && boxSize > 0){
+					var context = el[0].getContext("2d");
+					context.canvas.width = boxSize;
+					context.canvas.height = boxSize;
+				}
                 chart=new Chart(el,{//Chart.js initialize with data
                     type:"pie",
                     data:{
@@ -120,7 +156,8 @@
                         datasets:[{data:dataitems,backgroundColor:colors,borderColor:colors}]
                     },
                     options:{
-                        responsive:false,
+                        responsive:true,
+						animation:{duration: noAnimate?0:1000},
                         legend:{display:false},
                         onClick:(e)=>{
                             var activePoints=chart.getElementsAtEvent(e),sub=activePoints[0]?chart.data.labels[activePoints[0]._index]:null;
@@ -130,6 +167,7 @@
                 });
                 chart.update();
 				log("chart complete.");
+                return data;
             };
             //triggered when Never ending reddit fires (RES)
             document.body.addEventListener("DOMNodeInserted",(e)=>{if(e.target.tagName==="DIV" && ($(e.target).attr("id")||"").indexOf("siteTable")>-1)calculate();},true);
@@ -155,7 +193,7 @@
         checkForChartJs(0);
    };
 
-    var css=".rc-float{position:fixed;bottom:20px;right:0px; z-index:2000;border-radius:20px;padding:10px;opacity:0.4;text-align:center;} .rc-float:hover{background-color:rgba(0,0,0,0.8);opacity:1} .rc-aggspan{display:none;color:white;font-size:small;} .rc-chart{cursor:pointer;} .subreddit{border-radius:2px;padding:2px;} .rc-active{background-color:rgba(66,66,66,0.3) !important;} .rcf{height:0px;position:fixed;border:0px}";
+    var css=".rc-float{position:fixed;bottom:20px;right:0px; z-index:2000;border-radius:20px;padding:10px;opacity:0.4;text-align:center;} .rc-float:hover{background-color:rgba(0,0,0,0.8);opacity:1} .rc-aggspan{display:none;color:white;font-size:small;} .rc-chart{cursor:pointer;} .subreddit{border-radius:2px;padding:2px;} .rc-active{background-color:rgba(66,66,66,0.3) !important;} .rcf{height:0px;position:fixed;border:0px} .rcx { }";
     $("body")
 		.append($("<style>").html(css))
         .append($("<script>").attr({src:"https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.4.0/Chart.min.js"}))
