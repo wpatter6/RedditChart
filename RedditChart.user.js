@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         RedditChart
 // @namespace    http://tampermonkey.net/
-// @version      2.0
+// @version      2.1
 // @description  Some data analysis for reddit
 // @author       wpatter6
 // @match        *://*.reddit.com/*
@@ -14,7 +14,7 @@
     'use strict';
     const main=()=>{
         (function($) {
-            let doLog=true,_canvasBoxSize = 290, _canvasMinSize = 60,_lastData=null, _lastColors=null,_noCollapse=!!localStorage.getItem("rc-noCollapse"),selectOpened=false,
+            let doLog=false,_canvasBoxSize = 290, _canvasMinSize = 60,_lastData=null, _lastColors=null,_noCollapse=!!localStorage.getItem("rc-noCollapse"),selectOpened=false,
             url = String(location), old = url.indexOf("old.reddit.com") !== -1, postSelector = old ? ".thing" : ".scrollerItem",
             aggregates={
                 "Post Count":1
