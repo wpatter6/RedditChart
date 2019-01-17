@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         RedditChart
 // @namespace    http://tampermonkey.net/
-// @version      2.1
+// @version      2.2
 // @description  Some data analysis for reddit
 // @author       wpatter6
 // @match        *://*.reddit.com/*
@@ -72,7 +72,7 @@
                     .mousedown((e)=>{if(e.button !== 2) return true; var activePoints=chart.getElementsAtEvent(e.originalEvent), sub=activePoints.length > 0 ? chart.data.labels[activePoints[0]._index] :null; exclude=sub; calculate(); return false;}),
                 dd=$("<select>").addClass("rc-dd").change((e)=>{localStorage.setItem("rc-agg",aggregate=parseInt($(e.target).val())); calculate();}).click(()=>{selectOpened=!selectOpened}),
                 ddspan=$("<span>").addClass("rc-aggspan").append(dd).append($("<span>").text((()=>{//set the text of which page we're on
-                    if(subpage.indexOf("user")===0) {//handles user multis as well
+                    if(subpage && subpage.indexOf("user")===0) {//handles user multis as well
                         var username=execReg("/user/([^?#]*)",location);
                         if(username) return subpage.replace("user", username);
                     }
